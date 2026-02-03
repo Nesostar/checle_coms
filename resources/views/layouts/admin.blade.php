@@ -6,6 +6,7 @@
 <title>@yield('title', 'Admin Dashboard - COMS')</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
 @stack('scripts')
 <style>
   body { margin: 0; font-family: Arial, sans-serif; background: #f8f8f8; }
@@ -80,7 +81,48 @@
     background: #fff; padding: 20px; min-height: 80vh;
     border: 1px solid #ccc; border-radius: 5px;
   }
+
+  /* =========================
+   RESPONSIVE SIDEBAR FIX
+========================= */
+@media (max-width: 768px) {
+
+  body {
+    overflow-x: hidden;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -260px; /* hidden by default */
+    width: 240px;
+    height: 100vh;
+    transition: left 0.3s ease;
+    z-index: 9999;
+  }
+
+  .sidebar.show {
+    left: 0;
+  }
+
+  .main {
+    margin-left: 0 !important;
+    padding: 10px;
+  }
+}
+
+.topbar {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  #content-area {
+    padding: 15px;
+  }
 </style>
+
+ <!-- Cache-busting CSS -->
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ time() }}">
 </head>
 <body>
 
@@ -178,11 +220,28 @@
   const main = document.getElementById('main');
 
   toggleBtn.addEventListener('click', () => {
-    sidebar.classList.toggle('collapsed');
-    main.classList.toggle('collapsed');
+
+    if (window.innerWidth <= 768) {
+      // MOBILE: slide in/out
+      sidebar.classList.toggle('show');
+    } else {
+      // DESKTOP: collapse sidebar
+      sidebar.classList.toggle('collapsed');
+      main.classList.toggle('collapsed');
+    }
+
   });
 
-  // Submenu toggle
+  // Close sidebar when clicking outside (mobile only)
+  document.addEventListener('click', function (e) {
+    if (window.innerWidth <= 768) {
+      if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+        sidebar.classList.remove('show');
+      }
+    }
+  });
+
+  // Submenu toggle (desktop + mobile)
   document.querySelectorAll('.has-submenu').forEach(menu => {
     menu.addEventListener('click', () => {
       menu.classList.toggle('open');
@@ -190,5 +249,7 @@
   });
 </script>
 
+<!-- Cache-busting JS -->
+    <script src="{{ asset('js/app.js') }}?v={{ time() }}"></script>
 </body>
 </html>

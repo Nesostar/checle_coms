@@ -69,7 +69,48 @@
   .topbar { display: flex; justify-content: space-between; align-items: center; background: #f2f2f2; padding: 10px 15px; margin-bottom: 15px; }
   .toggle-btn { font-size: 20px; cursor: pointer; color: #0a5f4e; }
   #content-area { background: #fff; padding: 20px; min-height: 80vh; border: 1px solid #ccc; border-radius: 5px; }
+
+  /* =========================
+   RESPONSIVE SIDEBAR FIX
+========================= */
+@media (max-width: 768px) {
+
+  body {
+    overflow-x: hidden;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -260px; /* hidden by default */
+    width: 240px;
+    height: 100vh;
+    transition: left 0.3s ease;
+    z-index: 9999;
+  }
+
+  .sidebar.show {
+    left: 0;
+  }
+
+  .main {
+    margin-left: 0 !important;
+    padding: 10px;
+  }
+}
+
+.topbar {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  #content-area {
+    padding: 15px;
+  }
 </style>
+
+ <!-- Cache-busting CSS -->
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ time() }}">
 </head>
 <body>
 
@@ -128,18 +169,39 @@
   const main = document.getElementById('main');
 
   toggleBtn.addEventListener('click', () => {
-    sidebar.classList.toggle('collapsed');
-    main.classList.toggle('collapsed');
+
+    if (window.innerWidth <= 768) {
+      // MOBILE
+      sidebar.classList.toggle('show');
+    } else {
+      // DESKTOP
+      sidebar.classList.toggle('collapsed');
+      main.classList.toggle('collapsed');
+    }
+
+  });
+
+  // Close sidebar on outside click (mobile)
+  document.addEventListener('click', function (e) {
+    if (window.innerWidth <= 768) {
+      if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+        sidebar.classList.remove('show');
+      }
+    }
   });
 
   // Submenu toggle
   function toggleSubmenu(id, element) {
     const submenu = document.getElementById(id);
-    const caret = element.querySelector('i.fa-chevron-down');
-    submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+
+    submenu.style.display =
+      submenu.style.display === 'block' ? 'none' : 'block';
+
     element.classList.toggle('open');
   }
 </script>
 
+<!-- Cache-busting JS -->
+    <script src="{{ asset('js/app.js') }}?v={{ time() }}"></script>
 </body>
 </html>

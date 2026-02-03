@@ -15,10 +15,6 @@
                class="btn btn-success btn-sm">
                 Download PDF
             </a>
-
-            <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
-                Print
-            </button>
         </div>
     </div>
 

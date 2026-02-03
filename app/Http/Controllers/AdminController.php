@@ -1590,7 +1590,7 @@ public function userUpdate(Request $request, $id)
 
 
 /* ----------------- DELETE USER ----------------- */
-public function userDelete($id)
+public function userDestroy($id)
 {
     User::findOrFail($id)->delete();
     return back()->with('success', 'User deleted successfully.');

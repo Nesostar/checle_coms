@@ -267,7 +267,9 @@ Route::prefix('customers')->name('customers.')->group(function () {
 
 
     // Delete invoice
+    Route::get('/view/{id}', [AdminController::class, 'showInvoice'])->name('view');
     Route::delete('/{id}', [AdminController::class, 'invoiceDelete'])->name('delete');
+
 });
 
 
