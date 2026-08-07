@@ -280,10 +280,12 @@ public function depositStore(Request $request)
     }
 
     public function categoryEdit($id)
-    {
-        $category = Category::findOrFail($id);
-        return view('admin.items.category', compact('category'));
-    }
+{
+    $category = Category::findOrFail($id);
+    $categories = Category::all();
+
+    return view('admin.items.category', compact('category', 'categories'));
+}
 
     public function categoryUpdate(Request $request, $id)
     {
