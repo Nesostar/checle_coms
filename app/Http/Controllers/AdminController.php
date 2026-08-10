@@ -434,20 +434,24 @@ public function itemNameDestroy($id)
 
 public function entryType()
 {
-    $entryTypes = EntryType::orderBy('id')->get();
-    return view('admin.items.entry_type', compact('entryTypes'));
+    $entryTypes = EntryType::with('item')->orderBy('id')->get();
+    $items = Item::orderBy('name')->get();
+
+    return view('admin.items.entry_type', compact('entryTypes', 'items'));
 }
 
 // Store a new entry type
 public function entryTypeStore(Request $request)
 {
     $request->validate([
+        'item_id' => 'required|exists:items,id',
         'name' => 'required|max:100',
         'direction' => 'required|in:in,out,damage,adjustment',
         'description' => 'nullable|string',
     ]);
 
     EntryType::create([
+        'item_id' => $request->item_id,
         'name' => $request->name,
         'direction' => $request->direction,
         'description' => $request->description,
@@ -460,13 +464,16 @@ public function entryTypeStore(Request $request)
 public function entryTypeUpdate(Request $request, $id)
 {
     $request->validate([
+        'item_id' => 'required|exists:items,id',
         'name' => 'required|max:100',
         'direction' => 'required|in:in,out,damage,adjustment',
         'description' => 'nullable|string',
     ]);
 
     $entryType = EntryType::findOrFail($id);
+
     $entryType->update([
+        'item_id' => $request->item_id,
         'name' => $request->name,
         'direction' => $request->direction,
         'description' => $request->description,

@@ -2,8 +2,60 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('images/image.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/image.png') }}">
 
-    <title>Checle Online Management System [COMS]</title>
+    <title>Checle Online Management System (COMS) | Checle General Traders Co. LTD</title>
+
+<meta name="description"
+      content="Checle Online Management System (COMS) by Checle General Traders Co. LTD for efficient business, inventory and management operations.">
+
+<meta name="keywords"
+      content="Checle, Checle General Traders, COMS, Checle Online Management System, online management system, inventory management, business management, Tanzania">
+
+<meta name="author" content="Checle General Traders Co. LTD">
+
+<meta name="robots" content="index, follow">
+
+<link rel="canonical" href="{{ url('/') }}">
+
+<link rel="icon" type="image/png" href="{{ asset('images/image.png') }}">
+<link rel="apple-touch-icon" href="{{ asset('images/image.png') }}">
+
+<meta property="og:title"
+      content="Checle Online Management System (COMS)">
+
+<meta property="og:description"
+      content="Checle General Traders Co. LTD - Online Management System for efficient business and inventory management.">
+
+<meta property="og:image"
+      content="{{ asset('images/image.png') }}">
+
+<meta property="og:url"
+      content="{{ url('/') }}">
+
+<meta property="og:type" content="website">
+
+<meta property="og:site_name"
+      content="Checle General Traders Co. LTD">
+
+
+      <meta property="og:title"
+      content="Checle Online Management System (COMS)">
+
+<meta property="og:description"
+      content="Checle General Traders Co. LTD - Online Management System for efficient business and inventory management.">
+
+<meta property="og:image"
+      content="{{ asset('images/image.png') }}">
+
+<meta property="og:url"
+      content="{{ url('/') }}">
+
+<meta property="og:type" content="website">
+
+<meta property="og:site_name"
+      content="Checle General Traders Co. LTD">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { 

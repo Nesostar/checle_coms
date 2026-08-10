@@ -1,2 +1,10 @@
 User-agent: *
-Disallow:
+Allow: /
+
+Disallow: /admin/
+Disallow: /login
+Disallow: /logout
+Disallow: /password/
+Disallow: /admin/items/entrytype/store
+
+Sitemap: https://www.checle.co.tz/sitemap.xml

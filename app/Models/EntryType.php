@@ -10,10 +10,11 @@ class EntryType extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name',
-        'direction',
-        'description',
-    ];
+    'item_id',
+    'name',
+    'direction',
+    'description',
+];
 
     public function item()
     {

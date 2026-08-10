@@ -18,6 +18,18 @@
     <div class="card p-3 mt-3">
         <form action="{{ route('admin.items.entrytype.store') }}" method="POST">
             @csrf
+            <div class="form-group mb-2">
+    <label>Item</label>
+    <select name="item_id" class="form-select" required>
+        <option value="">Select Item</option>
+
+        @foreach($items as $item)
+            <option value="{{ $item->id }}">
+                {{ $item->name }}
+            </option>
+        @endforeach
+    </select>
+</div>
 
             <div class="form-group mb-2">
                 <label>Entry Type Name</label>
@@ -48,24 +60,26 @@
         <h4>Entry Type List</h4>
 
         <table class="table table-bordered mt-3">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Direction</th>
-                    <th>Description</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
+        <thead>
+            <tr>
+            <th>ID</th>
+            <th>Item</th>
+            <th>Name</th>
+            <th>Direction</th>
+            <th>Description</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
 
             <tbody>
                 @foreach($entryTypes as $type)
                 <tr>
-                    <td>{{ $type->id }}</td>
-                    <td>{{ $type->name }}</td>
-                    <td>{{ strtoupper($type->direction) }}</td>
-                    <td>{{ $type->description ?? '—' }}</td>
-                    <td>
+    <td>{{ $type->id }}</td>
+    <td>{{ $type->item->name ?? '—' }}</td>
+    <td>{{ $type->name }}</td>
+    <td>{{ strtoupper($type->direction) }}</td>
+    <td>{{ $type->description ?? '—' }}</td>
+    <td>
                         {{-- Edit Button --}}
                         <button class="btn btn-warning btn-sm"
                                 data-bs-toggle="modal"
@@ -101,6 +115,18 @@
                                     <div class="form-group mb-2">
                                         <label>Entry Type Name</label>
                                         <input type="text" name="name" value="{{ $type->name }}" class="form-control" required>
+                                    </div>
+
+                                    <div class="form-group mb-2">
+                                        <label>Item</label>
+                                        <select name="item_id" class="form-select" required>
+                                            <option value="">Select Item</option>
+                                            @foreach($items as $item)
+                                                <option value="{{ $item->id }}" {{ $type->item_id == $item->id ? 'selected' : '' }}>
+                                                    {{ $item->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
                                     </div>
 
                                     <div class="form-group mb-2">
