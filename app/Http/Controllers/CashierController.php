@@ -144,137 +144,209 @@ return view('cashier.dashboard', compact(
     /* =========================================================
        STORE POS SALE (NO INVOICES)
     ========================================================= */
-    public function posStore(Request $request)
-    {
-        $request->validate([
-            'customer_name'   => 'nullable|string|max:255',
-            'amount_paid'     => 'required|numeric|min:0',
-            'items'           => 'required|array|min:1',
-            'items.*.item_id' => 'required|exists:items,id',
-            'items.*.qty'     => 'required|numeric|min:0.1',
-        ]);
 
-        DB::beginTransaction();
+public function posStore(Request $request)
+{
+    $request->validate([
+        'customer_name'        => 'nullable|string|max:255',
+        'amount_paid'          => 'required|numeric|min:0',
+        'items'                => 'required|array|min:1',
+        'items.*.item_id'      => 'required|exists:items,id',
+        'items.*.qty'          => 'required|numeric|min:0.1',
+        'items.*.price_type'   => 'required|in:retail,wholesale',
+    ]);
 
-        try {
-            /* =============================
-               1. CALCULATE TOTAL
-            ============================== */
-            $totalAmount = 0;
+    DB::beginTransaction();
 
-            foreach ($request->items as $row) {
-                $item = Item::findOrFail($row['item_id']);
-                $price = $row['price_type'] === 'wholesale'
+    try {
+
+        /* =============================
+           1. CALCULATE TOTAL
+        ============================= */
+
+        $totalAmount = 0;
+
+        foreach ($request->items as $row) {
+
+            $item = Item::findOrFail($row['item_id']);
+
+            $price = $row['price_type'] === 'wholesale'
                 ? $item->wholesale_price
                 : $item->retail_price;
-            
-            $totalAmount += $price * $row['qty'];
-            
-            }
 
-            $balance = max(0, $totalAmount - $request->amount_paid);
+            $totalAmount += $price * $row['qty'];
+        }
+
+
+        /* =============================
+           2. CALCULATE BALANCE
+        ============================= */
+
+        $amountPaid = (float) $request->amount_paid;
+
+        $balance = max(
+            0,
+            $totalAmount - $amountPaid
+        );
+
+
+        /* =============================
+           3. CREATE SALE
+        ============================= */
+
+        $sale = Sale::create([
+            'user_id'        => Auth::id(),
+            'customer_name'  => $request->customer_name ?? 'Walk-in Customer',
+            'sale_date'      => now(),
+            'total_amount'   => $totalAmount,
+            'amount_paid'    => $amountPaid,
+            'balance'        => $balance,
+            'payment_status' => $balance > 0 ? 'pending' : 'paid',
+        ]);
+
+
+        /* =============================
+           4. PROCESS EACH ITEM
+        ============================= */
+
+        foreach ($request->items as $row) {
+
+            $item = Item::findOrFail($row['item_id']);
+
+            $qty = (float) $row['qty'];
+
 
             /* =============================
-               2. CREATE SALE
-            ============================== */
-            $sale = Sale::create([
-                'user_id'       => Auth::id(),
-                'customer_name' => $request->customer_name ?? 'Walk-in Customer',
-                'sale_date'     => now(),
-                'total_amount'  => $totalAmount,
-                'amount_paid'   => $request->amount_paid,
-                'balance'       => $balance,
-                'payment_status'=> $balance > 0 ? 'pending' : 'paid',
+               4.1 DETERMINE ACTUAL PRICE
+            ============================= */
+
+            $price = $row['price_type'] === 'wholesale'
+                ? $item->wholesale_price
+                : $item->retail_price;
+
+
+            /* =============================
+               4.2 STOCK CHECK
+            ============================= */
+
+            $available = $this->calculateCurrentStock($item->id);
+
+            if ($available < $qty) {
+
+                throw new \Exception(
+                    "Insufficient stock for {$item->name}. Available: {$available}"
+                );
+            }
+
+
+            /* =============================
+               4.3 GET/CREATE OUT ENTRY TYPE
+            ============================= */
+
+            $outType = EntryType::firstOrCreate(
+                [
+                    'item_id'   => $item->id,
+                    'direction' => 'out',
+                ],
+                [
+                    'name'        => 'sale',
+                    'description' => "POS sales for {$item->name}",
+                ]
+            );
+
+
+            /* =============================
+               4.4 SAVE SALE ITEM
+            ============================= */
+
+            SaleItem::create([
+                'sale_id'    => $sale->id,
+                'item_id'    => $item->id,
+                'quantity'   => $qty,
+                'price'      => $price,
+                'price_type' => $row['price_type'],
+                'subtotal'   => $price * $qty,
             ]);
 
-            /* =============================
-               3. GET OUT ENTRY TYPE
-            ============================== */
-            $outType = EntryType::where('direction', 'out')->first();
-            if (!$outType) {
-                throw new \Exception('OUT entry type not found');
-            }
 
             /* =============================
-               4. PROCESS ITEMS
-            ============================== */
-            foreach ($request->items as $row) {
-                $item = Item::findOrFail($row['item_id']);
-                $qty  = $row['qty'];
+               4.5 RECORD INVENTORY OUT
+            ============================= */
 
-                // STOCK CHECK
-                $available = $this->calculateCurrentStock($item->id);
-                if ($available < $qty) {
-                    throw new \Exception(
-                        "Insufficient stock for {$item->name}. Available: {$available}"
-                    );
-                }
+            InventoryTransaction::create([
+                'item_id'       => $item->id,
+                'entry_type_id' => $outType->id,
+                'quantity'      => $qty,
+                'note'          => "POS Sale #{$sale->id} - {$item->name}",
+                'user_id'       => Auth::id(),
+            ]);
+        }
 
-                // SAVE SALE ITEM (✅ price INCLUDED)
-                SaleItem::create([
-                    'sale_id'    => $sale->id,
-                    'item_id'    => $item->id,
-                    'quantity'   => $row['qty'],
-                    'price'      => $row['price'],
-                    'price_type' => $row['price_type'],
-                    'subtotal'   => $row['price'] * $row['qty'],
-                ]);
-                
-                
 
-                // RECORD INVENTORY TRANSACTION
-                InventoryTransaction::create([
-                    'item_id'       => $item->id,
-                    'entry_type_id' => $outType->id,
-                    'quantity'      => $qty,
-                    'note'          => "POS Sale #{$sale->id}",
-                    'created_by'    => Auth::id(),
-                ]);
-            }
+        /* =============================
+           5. COMMIT TRANSACTION
+        ============================= */
 
-            DB::commit();
+        DB::commit();
 
-            return redirect()
-                ->route('cashier.pos')
-                ->with('success', 'Sale completed successfully');
 
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', $e->getMessage());
+        return redirect()
+            ->route('cashier.pos')
+            ->with(
+                'success',
+                "Sale #{$sale->id} completed successfully!"
+            );
+
+
+    } catch (\Exception $e) {
+
+        DB::rollBack();
+
+        return back()
+            ->with('error', $e->getMessage())
+            ->withInput();
+    }
+}
+
+
+/* =========================================================
+   CALCULATE CURRENT STOCK
+========================================================= */
+
+private function calculateCurrentStock($itemId)
+{
+    $transactions = InventoryTransaction::where('item_id', $itemId)
+        ->with('entryType')
+        ->orderBy('created_at')
+        ->orderBy('id')
+        ->get();
+
+    if ($transactions->isEmpty()) {
+        return Item::find($itemId)->quantity ?? 0;
+    }
+
+    $balance = 0;
+
+    foreach ($transactions as $t) {
+
+        $direction = $t->entryType->direction ?? 'in';
+
+        if ($direction === 'in') {
+
+            $balance += $t->quantity;
+
+        } elseif (in_array($direction, ['out', 'damage'])) {
+
+            $balance -= $t->quantity;
+
+        } elseif ($direction === 'adjustment') {
+
+            $balance = $t->quantity;
         }
     }
 
-    /* =========================================================
-       CALCULATE CURRENT STOCK (OPTION 2)
-    ========================================================= */
-    private function calculateCurrentStock($itemId)
-    {
-        $transactions = InventoryTransaction::where('item_id', $itemId)
-            ->with('entryType')
-            ->orderBy('created_at')
-            ->orderBy('id')
-            ->get();
-
-        if ($transactions->isEmpty()) {
-            return Item::find($itemId)->quantity ?? 0;
-        }
-
-        $balance = 0;
-
-        foreach ($transactions as $t) {
-            $direction = $t->entryType->direction ?? 'in';
-
-            if ($direction === 'in') {
-                $balance += $t->quantity;
-            } elseif (in_array($direction, ['out', 'damage'])) {
-                $balance -= $t->quantity;
-            } elseif ($direction === 'adjustment') {
-                $balance = $t->quantity;
-            }
-        }
-
-        return $balance;
-    }
+    return $balance;
+}
 
 
 // ================
