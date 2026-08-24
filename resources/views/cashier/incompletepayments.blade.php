@@ -95,7 +95,7 @@
                                             <tbody>
                                                 @foreach($sale->items as $item)
                                                 <tr>
-                                                    <td>{{ $item->item->name }}</td>
+                                                    <td>{{ optional($item->item)->name ?? 'Item Deleted' }}</td>
                                                     <td>{{ number_format($item->price,2) }}</td>
                                                     <td>{{ $item->quantity }}</td>
                                                     <td>{{ number_format($item->subtotal,2) }}</td>
