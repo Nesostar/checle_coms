@@ -53,7 +53,7 @@
             <tr>
                 <td>{{ $loop->iteration }}</td>
                 <td>{{ $exp->title }}</td>
-                <td>{{ $exp->category->name }}</td>
+                <td>{{ $exp->category->name ?? 'Uncategorized' }}</td>
                 <td>{{ number_format($exp->amount,2) }}</td>
                 <td>{{ \Carbon\Carbon::parse($exp->date)->format('d/m/Y') }}</td>
                 <td>{{ $exp->description ?? '-' }}</td>
