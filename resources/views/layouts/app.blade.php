@@ -123,6 +123,71 @@
   <strong>OPERATION PANEL</strong>
   <a href="{{ route('cashier.dashboard.index') }}" class="{{ request()->routeIs('cashier.dashboard.index') ? 'active' : '' }}"><i class="fa fa-home"></i><span>Home - Dashboard</span></a>
   <a href="{{ route('cashier.deposit.index') }}" class="{{ request()->routeIs('cashier.deposit.index') ? 'active' : '' }}"><i class="fa fa-money-bill"></i><span>Deposit</span></a>
+
+  <!-- Items Management Dropdown -->
+<div class="menu-toggle" onclick="toggleSubmenu('itemsSubmenu', this)">
+    <a href="javascript:void(0);"
+       style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <i class="fa fa-box"></i>
+            <span>Items Management</span>
+        </div>
+        <i class="fa fa-chevron-down"></i>
+    </a>
+</div>
+
+<div class="submenu" id="itemsSubmenu">
+
+    <a href="{{ route('cashier.items.category') }}"
+       class="{{ request()->routeIs('cashier.items.category') ? 'active' : '' }}">
+        <i class="fa fa-list"></i>
+        <span>Item Category</span>
+    </a>
+
+    <a href="{{ route('cashier.items.subcategory') }}"
+       class="{{ request()->routeIs('cashier.items.subcategory') ? 'active' : '' }}">
+        <i class="fa fa-list-alt"></i>
+        <span>Item Sub Category</span>
+    </a>
+
+    <a href="{{ route('cashier.items.name') }}"
+       class="{{ request()->routeIs('cashier.items.name') ? 'active' : '' }}">
+        <i class="fa fa-tag"></i>
+        <span>Item Name</span>
+    </a>
+
+    <a href="{{ route('cashier.items.entryType') }}"
+       class="{{ request()->routeIs('cashier.items.entryType') ? 'active' : '' }}">
+        <i class="fa fa-plus-square"></i>
+        <span>Entry Type</span>
+    </a>
+
+    <a href="{{ route('cashier.items.stock') }}"
+       class="{{ request()->routeIs('cashier.items.stock') ? 'active' : '' }}">
+        <i class="fa fa-warehouse"></i>
+        <span>Inventory / Stock</span>
+    </a>
+
+    <a href="{{ route('cashier.items.adjustment') }}"
+       class="{{ request()->routeIs('cashier.items.adjustment') ? 'active' : '' }}">
+        <i class="fa fa-sliders-h"></i>
+        <span>Stock Adjustment</span>
+    </a>
+
+    <a href="{{ route('cashier.items.outofstock') }}"
+       class="{{ request()->routeIs('cashier.items.outofstock') ? 'active' : '' }}">
+        <i class="fa fa-exclamation-triangle"></i>
+        <span>Items Out of Stock</span>
+    </a>
+
+    <a href="{{ route('cashier.items.expired') }}"
+       class="{{ request()->routeIs('cashier.items.expired') ? 'active' : '' }}">
+        <i class="fa fa-clock"></i>
+        <span>Items Expired</span>
+    </a>
+
+</div>
+
   <a href="{{ route('cashier.pos') }}" class="{{ request()->routeIs('cashier.pos') ? 'active' : '' }}"><i class="fa fa-money-bill"></i><span>POS - Point of Sales</span></a>
   <a href="{{ route('cashier.payments') }}" class="{{ request()->routeIs('cashier.payments') ? 'active' : '' }}"><i class="fa fa-list"></i><span>Payment List</span></a>
   <a href="{{ route('cashier.incompletepayments') }}" class="{{ request()->routeIs('cashier.incompletepayments') ? 'active' : '' }}"><i class="fa fa-money-check-alt"></i><span>Incomplete Payments</span></a>

@@ -21,6 +21,8 @@ use Carbon\Carbon;
 use App\Models\EntryType;
 use App\Models\InventoryTransaction;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Category;
+use App\Models\Subcategory;
 
 class CashierController extends Controller
 {
@@ -121,6 +123,735 @@ return view('cashier.dashboard', compact(
 
         return back()->with('success', 'Deposit recorded successfully.');
     }
+
+
+    // =====================================================
+// CASHIER ITEMS MANAGEMENT
+// =====================================================
+
+/**
+ * =====================================================
+ * ITEM CATEGORY
+ * =====================================================
+ */
+
+/**
+ * Display item categories
+ */
+public function itemCategory()
+{
+    $categories = Category::latest()->get();
+
+    return view('cashier.items.category', compact('categories'));
+}
+
+/**
+ * Category index
+ */
+public function categoryIndex()
+{
+    $categories = Category::latest()->get();
+
+    return view('cashier.items.category', compact('categories'));
+}
+
+/**
+ * Category create
+ */
+public function categoryCreate()
+{
+    $categories = Category::latest()->get();
+
+    return view('cashier.items.category', compact('categories'));
+}
+
+/**
+ * Store category
+ */
+public function categoryStore(Request $request)
+{
+    $request->validate([
+        'name' => 'required|unique:categories,name|max:100',
+    ]);
+
+    Category::create([
+        'name' => $request->name,
+        'created_by' => Auth::user()->name ?? 'Cashier',
+    ]);
+
+    return redirect()
+        ->route('cashier.items.category')
+        ->with('success', 'Category created successfully.');
+}
+
+/**
+ * Edit category
+ */
+public function categoryEdit($id)
+{
+    $category = Category::findOrFail($id);
+
+    $categories = Category::latest()->get();
+
+    return view('cashier.items.category', compact(
+        'category',
+        'categories'
+    ));
+}
+
+/**
+ * Update category
+ */
+public function categoryUpdate(Request $request, $id)
+{
+    $category = Category::findOrFail($id);
+
+    $request->validate([
+        'name' => 'required|unique:categories,name,' . $category->id . '|max:100',
+    ]);
+
+    $category->update([
+        'name' => $request->name,
+    ]);
+
+    return redirect()
+        ->route('cashier.items.category')
+        ->with('success', 'Category updated successfully.');
+}
+
+/**
+ * Delete category
+ */
+public function categoryDestroy($id)
+{
+    $category = Category::findOrFail($id);
+
+    $category->delete();
+
+    return redirect()
+        ->route('cashier.items.category')
+        ->with('success', 'Category deleted successfully.');
+}
+
+
+// =====================================================
+// ITEM SUBCATEGORY MANAGEMENT
+// =====================================================
+
+/**
+ * Display subcategories
+ */
+public function itemSubCategory()
+{
+    $categories = Category::all();
+
+    $subcategories = Subcategory::with('category')
+        ->latest()
+        ->get();
+
+    $subcategory = null;
+
+    return view('cashier.items.subcategory', compact(
+        'categories',
+        'subcategories',
+        'subcategory'
+    ));
+}
+
+/**
+ * Edit subcategory
+ */
+public function subcategoryEdit($id)
+{
+    $subcategory = Subcategory::findOrFail($id);
+
+    $categories = Category::all();
+
+    $subcategories = Subcategory::with('category')
+        ->latest()
+        ->get();
+
+    return view('cashier.items.subcategory', compact(
+        'categories',
+        'subcategories',
+        'subcategory'
+    ));
+}
+
+/**
+ * Store subcategory
+ */
+public function subcategoryStore(Request $request)
+{
+    $request->validate([
+        'name' => 'required|max:100',
+        'category_id' => 'required|exists:categories,id',
+    ]);
+
+    Subcategory::create([
+        'name' => $request->name,
+        'category_id' => $request->category_id,
+    ]);
+
+    return redirect()
+        ->route('cashier.items.subcategory')
+        ->with('success', 'Subcategory added successfully.');
+}
+
+/**
+ * Update subcategory
+ */
+public function subcategoryUpdate(Request $request, $id)
+{
+    $subcategory = Subcategory::findOrFail($id);
+
+    $request->validate([
+        'name' => 'required|max:100',
+        'category_id' => 'required|exists:categories,id',
+    ]);
+
+    $subcategory->update([
+        'name' => $request->name,
+        'category_id' => $request->category_id,
+    ]);
+
+    return redirect()
+        ->route('cashier.items.subcategory')
+        ->with('success', 'Subcategory updated successfully.');
+}
+
+/**
+ * Delete subcategory
+ */
+public function subcategoryDestroy($id)
+{
+    $subcategory = Subcategory::findOrFail($id);
+
+    $subcategory->delete();
+
+    return redirect()
+        ->route('cashier.items.subcategory')
+        ->with('success', 'Subcategory deleted successfully.');
+}
+
+
+// =====================================================
+// ITEM NAME MANAGEMENT
+// =====================================================
+
+/**
+ * Display items
+ */
+public function itemName()
+{
+    $items = Item::with('category', 'subcategory')
+        ->latest()
+        ->get();
+
+    $categories = Category::all();
+
+    $subcategories = Subcategory::all();
+
+    return view('cashier.items.name', compact(
+        'items',
+        'categories',
+        'subcategories'
+    ));
+}
+
+/**
+ * Create item
+ */
+public function itemNameCreate()
+{
+    $categories = Category::all();
+
+    $subcategories = Subcategory::all();
+
+    return view('cashier.items.name.create', compact(
+        'categories',
+        'subcategories'
+    ));
+}
+
+/**
+ * Store item
+ */
+public function itemNameStore(Request $request)
+{
+    $request->validate([
+        'name' => 'required|max:100|unique:items,name',
+        'subcategory_id' => 'required|exists:subcategories,id',
+    ]);
+
+    $subcategory = Subcategory::findOrFail(
+        $request->subcategory_id
+    );
+
+    Item::create([
+        'name' => $request->name,
+        'subcategory_id' => $request->subcategory_id,
+        'category_id' => $subcategory->category_id,
+        'created_by' => Auth::user()->name ?? 'Cashier',
+    ]);
+
+    return redirect()
+        ->route('cashier.items.name')
+        ->with('success', 'Item added successfully.');
+}
+
+/**
+ * Edit item
+ */
+public function itemNameEdit($id)
+{
+    $item = Item::findOrFail($id);
+
+    $categories = Category::all();
+
+    $subcategories = Subcategory::all();
+
+    return view('cashier.items.name.edit', compact(
+        'item',
+        'categories',
+        'subcategories'
+    ));
+}
+
+/**
+ * Update item
+ */
+public function itemNameUpdate(Request $request, $id)
+{
+    $item = Item::findOrFail($id);
+
+    $request->validate([
+        'name' => 'required|max:100|unique:items,name,' . $item->id,
+        'category_id' => 'required|exists:categories,id',
+        'subcategory_id' => 'required|exists:subcategories,id',
+    ]);
+
+    $item->update([
+        'name' => $request->name,
+        'category_id' => $request->category_id,
+        'subcategory_id' => $request->subcategory_id,
+    ]);
+
+    return redirect()
+        ->route('cashier.items.name')
+        ->with('success', 'Item updated successfully.');
+}
+
+/**
+ * Delete item
+ */
+public function itemNameDestroy($id)
+{
+    $item = Item::findOrFail($id);
+
+    $item->delete();
+
+    return redirect()
+        ->route('cashier.items.name')
+        ->with('success', 'Item deleted successfully.');
+}
+
+
+// =====================================================
+// ENTRY TYPE MANAGEMENT
+// =====================================================
+
+/**
+ * Display entry types
+ */
+public function entryType()
+{
+    $entryTypes = EntryType::with('item')
+        ->orderBy('id')
+        ->get();
+
+    $items = Item::orderBy('name')->get();
+
+    return view('cashier.items.entry_type', compact(
+        'entryTypes',
+        'items'
+    ));
+}
+
+/**
+ * Store entry type
+ */
+public function entryTypeStore(Request $request)
+{
+    $request->validate([
+        'item_id' => 'required|exists:items,id',
+        'name' => 'required|max:100',
+        'direction' => 'required|in:in,out,damage,adjustment',
+        'description' => 'nullable|string',
+    ]);
+
+    EntryType::create([
+        'item_id' => $request->item_id,
+        'name' => $request->name,
+        'direction' => $request->direction,
+        'description' => $request->description,
+    ]);
+
+    return redirect()
+        ->route('cashier.items.entryType')
+        ->with('success', 'Entry type added successfully.');
+}
+
+/**
+ * Update entry type
+ */
+public function entryTypeUpdate(Request $request, $id)
+{
+    $request->validate([
+        'item_id' => 'required|exists:items,id',
+        'name' => 'required|max:100',
+        'direction' => 'required|in:in,out,damage,adjustment',
+        'description' => 'nullable|string',
+    ]);
+
+    $entryType = EntryType::findOrFail($id);
+
+    $entryType->update([
+        'item_id' => $request->item_id,
+        'name' => $request->name,
+        'direction' => $request->direction,
+        'description' => $request->description,
+    ]);
+
+    return redirect()
+        ->route('cashier.items.entryType')
+        ->with('success', 'Entry type updated successfully.');
+}
+
+/**
+ * Delete entry type
+ */
+public function entryTypeDestroy($id)
+{
+    $entryType = EntryType::findOrFail($id);
+
+    $entryType->delete();
+
+    return redirect()
+        ->route('cashier.items.entryType')
+        ->with('success', 'Entry type deleted successfully.');
+}
+
+
+// =====================================================
+// INVENTORY / STOCK
+// =====================================================
+
+/**
+ * Display inventory / stock
+ */
+public function inventory()
+{
+    $items = Item::with('subcategory.category')->get();
+
+    $entryTypes = EntryType::all();
+
+    $transactions = InventoryTransaction::with(
+        'item',
+        'entryType'
+    )
+        ->orderBy('created_at')
+        ->orderBy('id')
+        ->get();
+
+    return view('cashier.items.inventory', compact(
+        'items',
+        'entryTypes',
+        'transactions'
+    ));
+}
+
+/**
+ * Store stock entry
+ */
+public function inventoryStore(Request $request)
+{
+    $request->validate([
+        'item_id' => 'required|exists:items,id',
+        'entry_type_id' => 'required|exists:entry_types,id',
+        'quantity' => 'required|numeric|min:1',
+        'note' => 'nullable|string',
+        'retail_price' => 'nullable|numeric',
+        'whole_price' => 'nullable|numeric',
+        'expiry_date' => 'nullable|date',
+    ]);
+
+    $item = Item::findOrFail($request->item_id);
+
+    $entryType = EntryType::findOrFail(
+        $request->entry_type_id
+    );
+
+    switch ($entryType->direction) {
+
+        case 'in':
+
+            $item->quantity += $request->quantity;
+
+            break;
+
+        case 'out':
+
+        case 'damage':
+
+            if ($item->quantity < $request->quantity) {
+                return back()->withErrors(
+                    'Insufficient stock available.'
+                );
+            }
+
+            $item->quantity -= $request->quantity;
+
+            break;
+
+        case 'adjustment':
+
+            $item->quantity = $request->quantity;
+
+            break;
+    }
+
+    if ($request->retail_price !== null) {
+        $item->retail_price = $request->retail_price;
+    }
+
+    if ($request->whole_price !== null) {
+        $item->whole_price = $request->whole_price;
+    }
+
+    if ($request->expiry_date !== null) {
+        $item->expiry_date = $request->expiry_date;
+    }
+
+    $item->save();
+
+    InventoryTransaction::create([
+        'item_id' => $item->id,
+        'entry_type_id' => $entryType->id,
+        'quantity' => $request->quantity,
+        'note' => $request->note,
+        'expiry_date' => $request->expiry_date,
+        'user_id' => Auth::id(),
+    ]);
+
+    return redirect()
+        ->route('cashier.items.stock')
+        ->with('success', 'Stock entry added successfully.');
+}
+
+/**
+ * Update stock entry
+ */
+public function inventoryUpdate(Request $request, $id)
+{
+    $transaction = InventoryTransaction::findOrFail($id);
+
+    $item = Item::findOrFail(
+        $transaction->item_id
+    );
+
+    $entryType = EntryType::findOrFail(
+        $transaction->entry_type_id
+    );
+
+    $request->validate([
+        'quantity' => 'required|numeric|min:1',
+        'note' => 'nullable|string',
+    ]);
+
+    // Revert previous stock movement
+    if ($entryType->direction === 'in') {
+
+        $item->quantity -= $transaction->quantity;
+
+    } elseif ($entryType->direction === 'out') {
+
+        $item->quantity += $transaction->quantity;
+    }
+
+    // Apply new stock movement
+    if ($entryType->direction === 'in') {
+
+        $item->quantity += $request->quantity;
+
+    } elseif ($entryType->direction === 'out') {
+
+        if ($item->quantity < $request->quantity) {
+            return back()->withErrors(
+                'Insufficient stock after update.'
+            );
+        }
+
+        $item->quantity -= $request->quantity;
+    }
+
+    $item->save();
+
+    $transaction->update([
+        'quantity' => $request->quantity,
+        'note' => $request->note,
+        'user_id' => Auth::id(),
+    ]);
+
+    return redirect()
+        ->route('cashier.items.stock')
+        ->with('success', 'Stock entry updated successfully.');
+}
+
+/**
+ * Delete stock entry
+ */
+public function inventoryDestroy($id)
+{
+    $transaction = InventoryTransaction::findOrFail($id);
+
+    $item = Item::findOrFail(
+        $transaction->item_id
+    );
+
+    $entryType = EntryType::findOrFail(
+        $transaction->entry_type_id
+    );
+
+    // Restore stock before deleting transaction
+    if ($entryType->direction === 'in') {
+
+        $item->quantity -= $transaction->quantity;
+
+    } elseif ($entryType->direction === 'out') {
+
+        $item->quantity += $transaction->quantity;
+    }
+
+    $item->save();
+
+    $transaction->delete();
+
+    return redirect()
+        ->route('cashier.items.stock')
+        ->with('success', 'Stock entry deleted successfully.');
+}
+
+
+// =====================================================
+// STOCK ADJUSTMENT
+// =====================================================
+
+/**
+ * Display stock adjustments
+ */
+public function stockAdjustment()
+{
+    $transactions = InventoryTransaction::with(
+        'item',
+        'entryType'
+    )
+        ->latest()
+        ->get();
+
+    $items = Item::all();
+
+    $entryTypes = EntryType::all();
+
+    return view('cashier.items.stock_adjustment', compact(
+        'transactions',
+        'items',
+        'entryTypes'
+    ));
+}
+
+/**
+ * Store stock adjustment
+ */
+public function stockAdjustmentStore(Request $request)
+{
+    $request->validate([
+        'item_id' => 'required|exists:items,id',
+        'entry_type_id' => 'required|exists:entry_types,id',
+        'quantity' => 'required|integer|min:1',
+        'note' => 'nullable|string|max:255',
+    ]);
+
+    $entryType = EntryType::findOrFail(
+        $request->entry_type_id
+    );
+
+    $finalQty = $entryType->effect == '+'
+        ? $request->quantity
+        : -$request->quantity;
+
+    InventoryTransaction::create([
+        'item_id' => $request->item_id,
+        'entry_type_id' => $request->entry_type_id,
+        'quantity' => $finalQty,
+        'note' => $request->note,
+        'user_id' => Auth::id(),
+    ]);
+
+    return redirect()
+        ->route('cashier.items.adjustment')
+        ->with('success', 'Stock successfully adjusted.');
+}
+
+
+// =====================================================
+// OUT OF STOCK
+// =====================================================
+
+/**
+ * Display items that are out of stock
+ */
+public function outOfStock()
+{
+    $items = Item::with(
+        'category',
+        'subcategory'
+    )
+        ->get()
+        ->filter(function ($item) {
+            return $item->getCurrentStock() <= 0;
+        });
+
+    return view(
+        'cashier.items.out_of_stock',
+        compact('items')
+    );
+}
+
+
+// =====================================================
+// EXPIRED ITEMS
+// =====================================================
+
+/**
+ * Display expired items
+ */
+public function expiredItems()
+{
+    $today = now()->toDateString();
+
+    $expired = InventoryTransaction::with('item')
+        ->whereNotNull('expiry_date')
+        ->where('expiry_date', '<', $today)
+        ->where('quantity', '>', 0)
+        ->get()
+        ->groupBy('item_id');
+
+    return view(
+        'cashier.items.expired',
+        compact('expired')
+    );
+}
 
 
     // ==============

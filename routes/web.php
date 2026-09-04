@@ -428,6 +428,132 @@ Route::prefix('dashboard')->name('dashboard.')->group(function () {
     Route::get('/deposit', [CashierController::class, 'depositIndex'])->name('deposit.index');
     Route::post('/deposit/store', [CashierController::class, 'depositStore'])->name('deposit.store');
 
+// ===============================
+// ITEMS MANAGEMENT
+// ===============================
+Route::prefix('items')->name('items.')->group(function () {
+
+    // ===============================
+    // ITEMS MANAGEMENT PAGES
+    // ===============================
+
+    // Item Category
+    Route::get('/category', [CashierController::class, 'itemCategory'])->name('category');
+
+    // Item Sub Category
+    Route::get('/subcategory', [CashierController::class, 'itemSubCategory'])->name('subcategory');
+
+    // Item Name
+    Route::get('/name', [CashierController::class, 'itemName'])->name('name');
+
+    // Entry Type
+    Route::get('/entry-type', [CashierController::class, 'entryType'])->name('entryType');
+
+    // Inventory / Stock
+    Route::get('/stock', [CashierController::class, 'inventory'])->name('stock');
+
+    // Stock Adjustment
+    Route::get('/adjustment', [CashierController::class, 'stockAdjustment'])->name('adjustment');
+
+    // Items Out of Stock
+    Route::get('/outofstock', [CashierController::class, 'outOfStock'])->name('outofstock');
+
+    // Items Expired
+    Route::get('/expired', [CashierController::class, 'expiredItems'])->name('expired');
+
+// ===============================
+    // CATEGORY CRUD
+    // ===============================
+    Route::prefix('categories')->name('categories.')->group(function () {
+        Route::get('/', [CashierController::class, 'categoryIndex'])->name('index');
+        Route::get('/create', [CashierController::class, 'categoryCreate'])->name('create');
+        Route::post('/store', [CashierController::class, 'categoryStore'])->name('store');
+        Route::get('/edit/{id}', [CashierController::class, 'categoryEdit'])->name('edit');
+        Route::put('/update/{id}', [CashierController::class, 'categoryUpdate'])->name('update');
+        Route::delete('/delete/{id}', [CashierController::class, 'categoryDestroy'])->name('destroy');
+    });
+
+
+
+    // ===============================
+    // SUBCATEGORY CRUD
+    // ===============================
+    Route::prefix('subcategories')->name('subcategories.')->group(function () {
+        Route::get('/', [CashierController::class, 'itemSubCategory'])->name('index');
+        Route::post('/store', [CashierController::class, 'subcategoryStore'])->name('store');
+        Route::get('/edit/{id}', [CashierController::class, 'subcategoryEdit'])->name('edit');
+        Route::put('/update/{id}', [CashierController::class, 'subcategoryUpdate'])->name('update');
+        Route::delete('/delete/{id}', [CashierController::class, 'subcategoryDestroy'])->name('destroy');
+    });
+
+
+    // ===============================
+    // ITEM NAME CRUD
+    // ===============================
+    Route::prefix('names')->name('names.')->group(function () {
+        Route::get('/', [CashierController::class, 'itemName'])->name('index');
+        Route::post('/store', [CashierController::class, 'itemNameStore'])->name('store');
+        Route::get('/edit/{id}', [CashierController::class, 'itemNameEdit'])->name('edit');
+        Route::put('/update/{id}', [CashierController::class, 'itemNameUpdate'])->name('update');
+        Route::delete('/delete/{id}', [CashierController::class, 'itemNameDestroy'])->name('destroy');
+    });
+
+
+    // ===============================
+    // ENTRY TYPE CRUD
+    // ===============================
+    Route::prefix('entrytype')->name('entrytype.')->group(function () {
+        Route::get('/', [CashierController::class, 'entryType'])->name('index');
+        Route::post('/store', [CashierController::class, 'entryTypeStore'])->name('store');
+        Route::put('/update/{id}', [CashierController::class, 'entryTypeUpdate'])->name('update');
+        Route::delete('/delete/{id}', [CashierController::class, 'entryTypeDestroy'])->name('destroy');
+    });
+
+
+    // ===============================
+    // INVENTORY / STOCK CRUD
+    // ===============================
+    Route::prefix('inventory')->name('inventory.')->group(function () {
+
+        // Inventory main page
+        Route::get('/', [CashierController::class, 'inventory'])->name('index');
+
+        // Store stock
+        Route::post('/store', [CashierController::class, 'inventoryStore'])->name('store');
+
+        // Update stock transaction
+        Route::put('/update/{id}', [CashierController::class, 'inventoryUpdate'])->name('update');
+
+        // Delete stock transaction
+        Route::delete('/delete/{id}', [CashierController::class, 'inventoryDestroy'])->name('destroy');
+
+
+        // ===============================
+        // STOCK ADJUSTMENT
+        // ===============================
+        Route::get('/adjustment', [CashierController::class, 'stockAdjustment'])->name('adjust');
+        Route::post('/adjustment/store', [CashierController::class, 'stockAdjustmentStore'])->name('adjust.store');
+
+
+        // ===============================
+        // OUT OF STOCK
+        // ===============================
+        Route::get('/out-of-stock', [CashierController::class, 'outOfStock'])->name('out-of-stock');
+
+
+        // ===============================
+        // EXPIRED ITEMS
+        // ===============================
+        Route::get('/expired', [CashierController::class, 'expiredItems'])->name('expired');
+
+
+        // ===============================
+        // ITEM TRANSACTIONS / HISTORY
+        // ===============================
+        Route::get('/transactions/{item}', [CashierController::class, 'itemTransactions'])->name('transactions');
+    });
+});
+
 // POS
     Route::get('/pos', [CashierController::class, 'pos'])->name('pos');
     Route::post('/pos/store', [CashierController::class, 'posStore'])->name('pos.store');
