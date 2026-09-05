@@ -122,6 +122,7 @@
 
   <strong>OPERATION PANEL</strong>
   <a href="{{ route('cashier.dashboard.index') }}" class="{{ request()->routeIs('cashier.dashboard.index') ? 'active' : '' }}"><i class="fa fa-home"></i><span>Home - Dashboard</span></a>
+  <a href="{{ route('cashier.purchase.index') }}" class="{{ request()->routeIs('cashier.purchase.index') ? 'active' : '' }}"><i class="fa fa-shopping-cart"></i><span>Purchase</span></a>
   <a href="{{ route('cashier.deposit.index') }}" class="{{ request()->routeIs('cashier.deposit.index') ? 'active' : '' }}"><i class="fa fa-money-bill"></i><span>Deposit</span></a>
 
   <!-- Items Management Dropdown -->

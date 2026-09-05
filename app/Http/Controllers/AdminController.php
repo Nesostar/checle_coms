@@ -163,14 +163,18 @@ public function dashboard()
 
 
 // ========================
-    // PURCHASE
+// PURCHASE
 // ========================
 
 public function purchaseIndex()
 {
-    // fetch items and purchases and pass to view
-    $items = Item::all();
-    $purchases = Purchase::with('item')->latest()->get();
+    // Fetch items and purchases
+    $items = Item::orderBy('name')->get();
+
+    $purchases = Purchase::with('item')
+        ->latest()
+        ->get();
+
     return view('admin.purchase', compact('items', 'purchases'));
 }
 
@@ -179,29 +183,95 @@ public function purchaseStore(Request $request)
     $request->validate([
         'item_id' => 'required|exists:items,id',
         'quantity' => 'required|integer|min:1',
-        'purchase_price' => 'nullable|numeric',
-        'supplier' => 'nullable|string',
+        'purchase_price' => 'nullable|numeric|min:0',
+        'supplier' => 'nullable|string|max:255',
         'purchase_date' => 'required|date',
+        'note' => 'nullable|string|max:500',
     ]);
 
-    $purchase = Purchase::create([
-        'item_id' => $request->item_id,
-        'quantity' => $request->quantity,
-        'purchase_price' => $request->purchase_price,
-        'supplier' => $request->supplier,
-        'purchase_date' => $request->purchase_date,
-        'note' => $request->note,
-    ]);
+    DB::beginTransaction();
 
-    // create inventory transaction (assumes entry_type_id 1 is Purchase / Stock IN)
-    InventoryTransaction::create([
-        'item_id' => $request->item_id,
-        'entry_type_id' => 1,
-        'quantity' => $request->quantity,
-        'note' => 'Stock purchased (#' . $purchase->id . ')'
-    ]);
+    try {
 
-    return redirect()->route('admin.purchase.index')->with('success', 'Purchase recorded and stock updated successfully.');
+        // Get the selected item
+        $item = Item::findOrFail($request->item_id);
+
+        /*
+         * Find the correct Purchase / Stock IN entry type
+         * for this specific item.
+         *
+         * Do NOT use a hard-coded entry_type_id such as 1.
+         */
+        $entryType = EntryType::where('item_id', $item->id)
+            ->where('direction', 'in')
+            ->where('name', 'Purchase')
+            ->first();
+
+        // Make sure the Purchase entry type exists
+        if (!$entryType) {
+
+            DB::rollBack();
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'item_id' =>
+                        'No Purchase entry type is configured for this item. Please create a Purchase entry type with direction "in" first.'
+                ]);
+        }
+
+        // ========================
+        // CREATE PURCHASE
+        // ========================
+
+        $purchase = Purchase::create([
+            'item_id' => $request->item_id,
+            'quantity' => $request->quantity,
+            'purchase_price' => $request->purchase_price,
+            'supplier' => $request->supplier,
+            'purchase_date' => $request->purchase_date,
+            'note' => $request->note,
+        ]);
+
+        // ========================
+        // UPDATE ITEM STOCK
+        // ========================
+
+        $item->quantity += $request->quantity;
+        $item->save();
+
+        // ========================
+        // CREATE INVENTORY TRANSACTION
+        // ========================
+
+        InventoryTransaction::create([
+            'item_id' => $item->id,
+            'entry_type_id' => $entryType->id,
+            'quantity' => $request->quantity,
+            'note' => 'Stock purchased (#' . $purchase->id . ')',
+        ]);
+
+        // Commit everything
+        DB::commit();
+
+        return redirect()
+            ->route('admin.purchase.index')
+            ->with(
+                'success',
+                'Purchase recorded and stock updated successfully.'
+            );
+
+    } catch (\Throwable $e) {
+
+        // Undo purchase/stock changes if anything fails
+        DB::rollBack();
+
+        return back()
+            ->withInput()
+            ->withErrors([
+                'error' => 'Purchase failed: ' . $e->getMessage(),
+            ]);
+    }
 }
 
 // =========================

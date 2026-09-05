@@ -422,6 +422,14 @@ Route::prefix('dashboard')->name('dashboard.')->group(function () {
     Route::get('/', [CashierController::class, 'dashboard'])->name('index');
 });
 
+
+// PURCHASE ROUTES
+//=================
+    Route::prefix('purchase')->name('purchase.')->group(function () {
+        Route::get('/', [CashierController::class, 'purchaseIndex'])->name('index');
+        Route::post('/store', [CashierController::class, 'purchaseStore'])->name('store');
+    });
+
     // ======================
 // CASHIER DEPOSITS
 // ======================
