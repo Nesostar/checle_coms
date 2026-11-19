@@ -13,6 +13,7 @@ use App\Models\Expenditure;
 use App\Models\ExpenditureCategory;
 use App\Models\Customer;
 use App\Models\Quotation;
+use App\Models\QuotationItem;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use Illuminate\Support\Facades\DB;
@@ -1462,15 +1463,17 @@ public function destroyCustomer($id)
 // QUOTATIONS
 // ==================
 
-// =========================
+
+    // =========================
     // SHOW QUOTATIONS
     // =========================
     public function quotations()
     {
-        $customers  = Customer::orderBy('name')->get();
-        $quotations = Quotation::with('customer')
-                            ->orderBy('created_at', 'desc')
-                            ->get();
+        $customers = Customer::orderBy('name')->get();
+
+        $quotations = Quotation::with(['customer', 'items'])
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return view('cashier.quotations', compact('customers', 'quotations'));
     }
@@ -1480,24 +1483,73 @@ public function destroyCustomer($id)
     // =========================
     public function storeQuotation(Request $request)
     {
-        $request->validate([
-            'customer_id'    => 'required|exists:customers,id',
+        $validated = $request->validate([
+            'id' => 'nullable|integer|exists:quotations,id',
+            'customer_id' => 'required|exists:customers,id',
             'quotation_date' => 'required|date',
-            'status'         => 'required|string|in:Pending,Approved,Rejected',
-            'total'          => 'nullable|numeric|min:0',
+            'status' => 'required|string|in:Pending,Approved,Rejected',
+
+            // Quotation items
+            'items' => 'required|array|min:1',
+            'items.*.item_name' => 'required|string|max:255',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.unit_price' => 'required|numeric|min:0',
         ]);
 
-        Quotation::updateOrCreate(
-            ['id' => $request->id], // if id exists → update, else create
-            [
-                'customer_id'    => $request->customer_id,
-                'quotation_date' => $request->quotation_date,
-                'status'         => $request->status,
-                'total'          => $request->total ?? 0,
-            ]
-        );
+        DB::transaction(function () use ($validated) {
 
-        return back()->with('success', 'Quotation saved successfully.');
+            // UPDATE EXISTING QUOTATION
+            if (!empty($validated['id'])) {
+                $quotation = Quotation::findOrFail($validated['id']);
+
+                $quotation->update([
+                    'customer_id' => $validated['customer_id'],
+                    'quotation_date' => $validated['quotation_date'],
+                    'status' => $validated['status'],
+                ]);
+
+                // Replace previous quotation items
+                $quotation->items()->delete();
+
+            } else {
+                // CREATE NEW QUOTATION
+                $quotation = Quotation::create([
+                    'customer_id' => $validated['customer_id'],
+                    'quotation_date' => $validated['quotation_date'],
+                    'status' => $validated['status'],
+                    'total' => 0,
+                ]);
+            }
+
+            $grandTotal = 0;
+
+            // SAVE ITEMS AND CALCULATE TOTALS
+            foreach ($validated['items'] as $row) {
+
+                $quantity = (int) $row['quantity'];
+                $unitPrice = (float) $row['unit_price'];
+
+                $itemTotal = round($quantity * $unitPrice, 2);
+
+                $quotation->items()->create([
+                    'item_name' => $row['item_name'],
+                    'quantity' => $quantity,
+                    'unit_price' => $unitPrice,
+                    'total' => $itemTotal,
+                ]);
+
+                $grandTotal += $itemTotal;
+            }
+
+            // UPDATE QUOTATION GRAND TOTAL
+            $quotation->update([
+                'total' => round($grandTotal, 2),
+            ]);
+        });
+
+        return redirect()
+            ->route('cashier.quotations.index')
+            ->with('success', 'Quotation saved successfully.');
     }
 
     // =========================
@@ -1506,10 +1558,15 @@ public function destroyCustomer($id)
     public function destroyQuotation($id)
     {
         $quotation = Quotation::findOrFail($id);
-        $quotation->delete();
+
+        DB::transaction(function () use ($quotation) {
+            $quotation->items()->delete();
+            $quotation->delete();
+        });
 
         return back()->with('success', 'Quotation deleted successfully.');
     }
+
 
     // ===============
     // INVOICE
