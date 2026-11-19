@@ -1533,56 +1533,66 @@ public function destroyCustomer($id)
     /* =========================
        STORE / UPDATE INVOICE
     ========================== */
-    public function storeInvoice(Request $request)
-    {
-        $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'invoice_date' => 'required|date',
-            'due_date' => 'required|date|after_or_equal:invoice_date',
-            'status' => 'required|in:Draft,Sent,Paid',
-            'items' => 'required|array|min:1',
-            'items.*.item_id' => 'required|exists:items,id',
-            'items.*.qty' => 'required|numeric|min:1',
-            'items.*.price' => 'required|numeric|min:0',
+
+public function storeInvoice(Request $request)
+{
+    $request->validate([
+        'customer_id' => 'required|exists:customers,id',
+        'invoice_date' => 'required|date',
+        'due_date' => 'required|date|after_or_equal:invoice_date',
+        'status' => 'required|in:Draft,Sent,Paid',
+        'items' => 'required|array|min:1',
+        'items.*.item_id' => 'required|exists:items,id',
+        'items.*.qty' => 'required|numeric|min:1',
+        'items.*.price' => 'required|numeric|min:0',
+    ]);
+
+    DB::transaction(function () use ($request) {
+
+        $invoice = Invoice::updateOrCreate(
+            ['id' => $request->id],
+            [
+                'customer_id' => $request->customer_id,
+                'invoice_date' => $request->invoice_date,
+                'due_date' => $request->due_date,
+                'status' => $request->status,
+                'total' => 0,
+            ]
+        );
+
+        // Remove previous invoice items when updating
+        InvoiceItem::where('invoice_id', $invoice->id)->delete();
+
+        $total = 0;
+
+        foreach ($request->items as $row) {
+
+            // Retrieve the selected item
+            $item = Item::findOrFail($row['item_id']);
+
+            $subtotal = $row['qty'] * $row['price'];
+
+            InvoiceItem::create([
+                'invoice_id' => $invoice->id,
+                'item_id' => $item->id,
+                'item_name' => $item->name,
+                'quantity' => $row['qty'],
+                'price' => $row['price'],
+                'subtotal' => $subtotal,
+            ]);
+
+            $total += $subtotal;
+        }
+
+        // Update invoice total
+        $invoice->update([
+            'total' => $total,
         ]);
-    
-        DB::transaction(function () use ($request) {
-    
-            $invoice = Invoice::updateOrCreate(
-                ['id' => $request->id],
-                [
-                    'customer_id' => $request->customer_id,
-                    'invoice_date' => $request->invoice_date,
-                    'due_date' => $request->due_date,
-                    'status' => $request->status,
-                    'total' => 0
-                ]
-            );
-    
-            InvoiceItem::where('invoice_id', $invoice->id)->delete();
-    
-            $total = 0;
-    
-            foreach ($request->items as $row) {
-    
-                $subtotal = $row['qty'] * $row['price'];
-    
-                InvoiceItem::create([
-                    'invoice_id' => $invoice->id,
-                    'item_id' => $row['item_id'],
-                    'quantity' => $row['qty'],
-                    'price' => $row['price'],
-                    'subtotal' => $subtotal,
-                ]);
-    
-                $total += $subtotal;
-            }
-    
-            $invoice->update(['total' => $total]);
-        });
-    
-        return back()->with('success', 'Invoice saved successfully');
-    }
+    });
+
+    return back()->with('success', 'Invoice saved successfully');
+}
+
     
     public function destroyInvoice($id)
     {
